@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: oran-config
+  namespace: default
+data:
+  # metrics-api settings
+  RAN_INITIAL_UES: "300"
+  RAN_MAX_UES: "600"
+  RAN_NOISE_RANGE: "5.0"
+  RAN_BANDWIDTH_MHZ: "20"
+  # rl-agent settings
+  RAN_API_URL: "http://ran-simulator:8000"
+  MODEL_PATH: "/app/models/ppo_oran_final.zip"
+  STATS_PATH: "/app/models/vec_normalize.pkl"
+  LOOP_DELAY_S: "2.0"
+  API_READY_TIMEOUT_S: "60"

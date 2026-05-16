@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rl-xapp
+  namespace: default
+  labels:
+    app: rl-xapp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rl-xapp
+  template:
+    metadata:
+      labels:
+        app: rl-xapp
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        fsGroup: 999
+      containers:
+        - name: rl-xapp
+          image: oran-rl-xapp-rl-xapp:latest
+          imagePullPolicy: Never
+          envFrom:
+            - configMapRef:
+                name: oran-config
+          # بنزود المتغير ده عشان نضمن إنه بيكلم الـ Service بتاعة الـ API بالاسم الصح في K8s
+          env:
+            - name: RAN_API_URL
+              value: "http://ran-simulator:8000"
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "256Mi"
+            limits:
+              cpu: "1000m"
+              memory: "512Mi"
+          # الـ Healthcheck اللي إنت كنت عامله في الدوكر بيتم ترجمته هنا لـ livenessProbe
+          livenessProbe:
+            exec:
+              command:
+                - python
+                - -c
+                - "import os; open(os.environ.get('MODEL_PATH', '/app/models/ppo_oran_final.zip'))"
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3

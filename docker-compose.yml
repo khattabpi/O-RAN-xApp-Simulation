@@ -1,0 +1,83 @@
+services:
+  ran-simulator:
+    build:
+      context: ./metrics-api
+      dockerfile: Dockerfile
+    container_name: ran-simulator
+    restart: unless-stopped
+    ports:
+      - "8001:8000"
+    networks:
+      - oran_net
+    environment:
+      - RAN_INITIAL_UES=20
+      - RAN_MAX_UES=200
+      - RAN_NOISE_RANGE=5.0
+      - RAN_BANDWIDTH_MHZ=20
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 15s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+  rl-xapp:
+    build:
+      context: ./rl-agent
+      dockerfile: Dockerfile
+    container_name: rl-xapp
+    restart: unless-stopped
+    depends_on:
+      ran-simulator:
+        condition: service_healthy     # Waits for /health to pass, not just container start
+    networks:
+      - oran_net
+    environment:
+      - RAN_API_URL=http://ran-simulator:8000
+      - MODEL_PATH=/app/models/ppo_oran_final.zip
+      - STATS_PATH=/app/models/vec_normalize.pkl
+      - LOOP_DELAY_S=2.0
+      - API_READY_TIMEOUT_S=60
+    volumes:
+      - ./models:/app/models:ro       # Mount trained model as read-only
+
+  prometheus:
+    image: prom/prometheus:v2.51.2
+    container_name: prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    networks:
+      - oran_net
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=7d"
+
+  grafana:
+    image: grafana/grafana:10.4.2
+    container_name: grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    networks:
+      - oran_net
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+
+networks:
+  oran_net:
+    driver: bridge
+
+volumes:
+  prometheus_data:
+  grafana_data:
