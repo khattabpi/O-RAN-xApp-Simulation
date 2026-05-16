@@ -7,41 +7,41 @@ An enterprise-grade, cloud-native **O-RAN (Open Radio Access Network) xApp** sim
 ## 📐 Architecture Diagram
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────────────┐
-│                                    KUBERNETES (Minikube)                             │
-│                                                                                      │
-│  ┌──────────────────────────────────────────────────────────────────────────────┐   │
-│  │                              CONFIGMAP (01-configmap.yaml)                    │   │
-│  │                    (Thresholds: PRB_TARGET=85%, UE_SPIKE=500)                │   │
-│  └───────────────────────────────┬──────────────────────────────────────────────┘   │
-│                                  │                                                   │
-│  ┌───────────────────────────────▼──────────────────────────────────────────────┐   │
-│  │                                                                               │   │
+┌────────────────────────────────────────────────────────────────────────────────────┐
+│                                    KUBERNETES (Minikube)                           │
+│                                                                                    │
+│  ┌──────────────────────────────────────────────────────────────────────────────┐  │
+│  │                              CONFIGMAP (01-configmap.yaml)                   │  │
+│  │                    (Thresholds: PRB_TARGET=85%, UE_SPIKE=500)                │  │
+│  └───────────────────────────────┬──────────────────────────────────────────────┘  │
+│                                  │                                                 │
+│  ┌───────────────────────────────▼─────────────────────────────────────────────┐   │
+│  │                                                                             │   │
 │  │  ┌─────────────────────────┐         ┌─────────────────────────────────┐    │   │
 │  │  │                         │  REST   │                                 │    │   │
-│  │  │   🗼 RAN SIMULATOR       │◄────────┤      🧠 RL-xAPP (PPO Agent)      │    │   │
-│  │  │   (FastAPI - Port 8000) │  APIs   │  (Stable-Baselines3 - Port 8001) │    │   │
+│  │  │   🗼 RAN SIMULATOR       │◄────────┤      🧠 RL-xAPP (PPO Agent)      │  │   │
+│  │  │   (FastAPI - Port 8000) │  APIs   │  (Stable-Baselines3 - Port 8001) │   │   │
 │  │  │                         │         │                                 │    │   │
 │  │  │  • 3x gNodeBs (Cells)   │  ─────► │  • State: PRB Utilization       │    │   │
 │  │  │  • Dynamic UE Simulation│  Action │  • Action: Handover Decisions   │    │   │
 │  │  │  • PRB/Mbps Metrics     │         │  • Reward: -|Utilization-85%|   │    │   │
 │  │  └───────────┬─────────────┘         └───────────────┬─────────────────┘    │   │
-│  │              │                                       │                       │   │
-│  │              │ Metrics Scrape (GET /metrics)         │ Logs                  │   │
-│  │              ▼                                       ▼                       │   │
+│  │              │                                       │                      │   │
+│  │              │ Metrics Scrape (GET /metrics)         │ Logs                 │   │
+│  │              ▼                                       ▼                      │   │
 │  │  ┌─────────────────────────┐         ┌─────────────────────────────────┐    │   │
 │  │  │                         │         │                                 │    │   │
-│  │  │   📊 PROMETHEUS          │◄────────┤      📈 GRAFANA                 │    │   │
+│  │  │   📊 PROMETHEUS          │◄────────┤      📈 GRAFANA                │    │   │
 │  │  │   (Port 9090)           │  Data   │      (Port 3000)                │    │   │
 │  │  │                         │  Source │                                 │    │   │
 │  │  │  • Scrape: /metrics     │         │  • Pre-provisioned Dashboard    │    │   │
 │  │  │  • Interval: 5s         │         │  • Real-time PRB/Throughput     │    │   │
 │  │  └─────────────────────────┘         └─────────────────────────────────┘    │   │
-│  │                                                                               │   │
-│  └───────────────────────────────────────────────────────────────────────────────┘   │
-│                                                                                      │
-│  🔄 Self-Healing: Liveness/Readiness Probes + Auto-restart on Crash                 │
-│  🔐 Security: runAsNonRoot, Resource Limits (CPU/Memory)                            │
+│  │                                                                             │   │
+│  └─────────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                    │
+│  🔄 Self-Healing: Liveness/Readiness Probes + Auto-restart on Crash                │
+│  🔐 Security: runAsNonRoot, Resource Limits (CPU/Memory)                       \   │
  │
 └└──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ┘
